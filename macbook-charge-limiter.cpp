@@ -29,11 +29,18 @@
 
 #include "macbook-charge-limiter.h"
 
+
+// ---------------------------------------------------------------------------
+// Globals
+// ---------------------------------------------------------------------------
+
 // We only need 1 open connection, might as well be global.
 io_connect_t kIOConnection;
 
-// When break key iteration into two steps: (1) discovery, (2) enumeration.
-std::vector<std::string> kSMCKeys;
+
+// ---------------------------------------------------------------------------
+// Byte/String Conversion Utilities
+// ---------------------------------------------------------------------------
 
 UInt32 _strtoul(const char *str, int size, int base) {
     UInt32 total = 0;
@@ -74,6 +81,11 @@ void printVal(SMCVal_t val) {
         printf("no data\n");
     }
 }
+
+
+// ---------------------------------------------------------------------------
+// SMC Interface
+// ---------------------------------------------------------------------------
 
 kern_return_t SMCOpen(io_connect_t *conn) {
     kern_return_t result;
@@ -189,6 +201,11 @@ kern_return_t SMCWriteKey(SMCVal_t writeVal) {
 
     return kIOReturnSuccess;
 }
+
+
+// ---------------------------------------------------------------------------
+// Tool Logic
+// ---------------------------------------------------------------------------
 
 void usage(char *prog) {
     printf("MacBook Charge Limiter tool %s\n", VERSION);
