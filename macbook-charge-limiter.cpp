@@ -1,5 +1,6 @@
 /*
- * Apple System Management Control (SMC) Tool
+ * MacBook Charge Limiter Tool
+ * Copyright (c) 2021 AxonChisel.net
  * Copyright (C) 2015 theopolis
  * Copyright (C) 2006 devnull
  *
@@ -26,7 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "smc.h"
+#include "macbook-charge-limiter.h"
 
 // We only need 1 open connection, might as well be global.
 io_connect_t kIOConnection;
@@ -473,7 +474,7 @@ kern_return_t SMCFuzz(SMCVal_t val, bool fixed_key, bool fixed_val) {
 }
 
 void usage(char *prog) {
-  printf("Apple System Management Control (SMC) tool %s\n", VERSION);
+  printf("MacBook Charge Limiter tool %s\n", VERSION);
   printf("Usage:\n");
   printf("%s [options]\n", prog);
   printf("    -c <spell> : cast a spell\n");

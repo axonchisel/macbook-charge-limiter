@@ -2,13 +2,13 @@ CXX = clang++
 CXXFLAGS = -Wall -g -std=c++11 -stdlib=libc++
 LFLAGS = -framework IOKit -framework CoreFoundation
 
-all: smc 
+all: macbook-charge-limiter 
 
-smc: smc.o
-	$(CXX) $(CXXFLAGS) $(LFLAGS) -o smc smc.o
+macbook-charge-limiter: macbook-charge-limiter.o
+	$(CXX) $(CXXFLAGS) $(LFLAGS) -o macbook-charge-limiter macbook-charge-limiter.o
 
-smc.o: smc.h smc.cpp OSTypes.h
-	$(CXX) $(CXXFLAGS) -c smc.cpp
+macbook-charge-limiter.o: macbook-charge-limiter.h macbook-charge-limiter.cpp OSTypes.h
+	$(CXX) $(CXXFLAGS) -c macbook-charge-limiter.cpp
 
 clean:
-	-rm -f smc smc.o
+	-rm -f macbook-charge-limiter macbook-charge-limiter.o

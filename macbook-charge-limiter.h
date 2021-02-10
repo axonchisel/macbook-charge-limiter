@@ -1,5 +1,7 @@
 /*
- * Apple System Management Control (SMC) Tool
+ * MacBook Charge Limiter Tool
+ * Copyright (c) 2021 AxonChisel.net
+ * Copyright (C) 2015 theopolis
  * Copyright (C) 2006 devnull
  *
  * This program is free software; you can redistribute it and/or
@@ -15,11 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
- USA.
+ * USA.
  */
 
-#ifndef __SMC_H__
-#define __SMC_H__
+#ifndef __MACBOOK_CHARGE_LIMITER_H__
+#define __MACBOOK_CHARGE_LIMITER_H__
 #endif
 
 #include <unistd.h>
@@ -28,7 +30,7 @@
 //#include "OSTypes.h"
 #include <IOKit/IOKitLib.h>
 
-#define VERSION "1.01"
+#define VERSION "0.01"
 
 #define OP_NONE 0
 #define OP_LIST 1
