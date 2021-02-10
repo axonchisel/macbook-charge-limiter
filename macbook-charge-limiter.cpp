@@ -59,41 +59,8 @@ void _ultostr(char *str, UInt32 val) {
              (unsigned int)val);
 }
 
-float _strtof(char *str, int size, int e) {
-    float total = 0;
-    int i;
-
-    for (i = 0; i < size; i++) {
-        if (i == (size - 1))
-            total += (str[i] & 0xff) >> e;
-        else
-            total += str[i] << (size - 1 - i) * (8 - e);
-    }
-
-    return total;
-}
-
-void printFLT(SMCVal_t val) {
-    printf("%.0f ", *reinterpret_cast<float*>(val.bytes));
-}
-
-void printFPE2(SMCVal_t val) {
-    /* FIXME: This decode is incomplete, last 2 bits are dropped */
-
-    printf("%.0f ", _strtof(val.bytes, val.dataSize, 2));
-}
-
 void printUInt(SMCVal_t val) {
     printf("%u ", (unsigned int)_strtoul(val.bytes, val.dataSize, 10));
-}
-
-void printBytesHex(SMCVal_t val) {
-    int i;
-
-    printf("(bytes");
-    for (i = 0; i < val.dataSize; i++)
-        printf(" %02x", (unsigned char)val.bytes[i]);
-    printf(")\n");
 }
 
 void printVal(SMCVal_t val) {
@@ -103,12 +70,6 @@ void printVal(SMCVal_t val) {
             (strcmp(val.dataType, DATATYPE_UINT16) == 0) ||
             (strcmp(val.dataType, DATATYPE_UINT32) == 0))
             printUInt(val);
-        else if (strcmp(val.dataType, DATATYPE_FPE2) == 0)
-            printFPE2(val);
-        else if (strcmp(val.dataType, DATATYPE_FLT) == 0)
-            printFLT(val);
-
-        printBytesHex(val);
     } else {
         printf("no data\n");
     }
@@ -234,7 +195,6 @@ void usage(char *prog) {
     printf("Usage:\n");
     printf("%s [options]\n", prog);
     printf("    -h         : help\n");
-    printf("    -k <key>   : key to manipulate\n");
     printf("    -w <value> : write the specified value to a key\n");
     printf("    -v         : version\n");
     printf("\n");
@@ -247,16 +207,12 @@ int main(int argc, char *argv[]) {
 
     kern_return_t result;
     int op = OP_NONE;
-    UInt32Char_t key = "\0";
+    UInt32Char_t key = SMC_KEY_BATTERY_CHARGE_LEVEL_MAX;
     SMCVal_t val;
 
-    bool fixed_key = false, fixed_val = false;
+    bool fixed_val = false;
     while ((c = getopt(argc, argv, "hk:rw:v")) != -1) {
         switch (c) {
-        case 'k':
-            fixed_key = true;
-            snprintf(key, 5, "%s", optarg);
-            break;
         case 'r':
             op = OP_READ;
             break;
@@ -313,35 +269,24 @@ int main(int argc, char *argv[]) {
 
     int retcode = 0;
     switch (op) {
-    case OP_READ:
-        if (strlen(key) > 0) {
+        case OP_READ:
             result = SMCReadKey(key, &val);
             if (result != kIOReturnSuccess) {
                 fprintf(stderr, "Error: SMCReadKey() = %08x\n", result);
                 retcode = 1;
             }
-
             else {
                 printVal(val);
             }
-        } else {
-            printf("Error: specify a key to read\n");
-            retcode = 2;
-        }
-        break;
-    case OP_WRITE:
-        if (strlen(key) > 0) {
+            break;
+        case OP_WRITE:
             snprintf(val.key, 5, "%s", key);
             result = SMCWriteKey(val);
             if (result != kIOReturnSuccess) {
                 fprintf(stderr, "Error: SMCWriteKey() = %08x\n", result);
                 retcode = 1;
             }
-        } else {
-            printf("Error: specify a key to write\n");
-            retcode = 2;
-        }
-        break;
+            break;
     }
 
     SMCClose(kIOConnection);

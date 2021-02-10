@@ -49,6 +49,8 @@
 #define DATATYPE_SP78 "sp78"
 #define DATATYPE_FLT "flt "
 
+#define SMC_KEY_BATTERY_CHARGE_LEVEL_MAX "BCLM"
+
 typedef struct {
     char major;
     char minor;
