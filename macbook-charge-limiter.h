@@ -51,6 +51,10 @@
 
 #define SMC_KEY_BATTERY_CHARGE_LEVEL_MAX "BCLM"
 
+#define BCLM_VAL_MIN 1
+#define BCLM_VAL_MAX 100
+#define BCLM_VAL_DEFAULT 100
+
 typedef struct {
     char major;
     char minor;

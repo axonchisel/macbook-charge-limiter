@@ -219,6 +219,7 @@ void usage(char *prog) {
 
 int main(int argc, char *argv[]) {
     int c;
+    int retcode = 0;
     extern char *optarg;
     extern int optind, optopt, opterr;
 
@@ -227,7 +228,6 @@ int main(int argc, char *argv[]) {
     UInt32Char_t key = SMC_KEY_BATTERY_CHARGE_LEVEL_MAX;
     SMCVal_t val;
 
-    bool fixed_val = false;
     while ((c = getopt(argc, argv, "hk:rw:v")) != -1) {
         switch (c) {
         case 'r':
@@ -238,36 +238,19 @@ int main(int argc, char *argv[]) {
             return 0;
             break;
         case 'w':
-            fixed_val = true;
             op = OP_WRITE;
-
             {
-                size_t i;
-                int j, k1, k2;
-                char c;
-                char *p = optarg;
-                j = 0;
-                i = 0;
-                while (i < strlen(optarg)) {
-                    c = *p++;
-                    k1 = k2 = 0;
-                    i++;
-                    if ((c >= '0') && (c <= '9')) {
-                        k1 = c - '0';
-                    } else if ((c >= 'a') && (c <= 'f')) {
-                        k1 = c - 'a' + 10;
-                    }
-                    c = *p++;
-                    i++;
-                    if ((c >= '0') && (c <= '9')) {
-                        k2 = c - '0';
-                    } else if ((c >= 'a') && (c <= 'f')) {
-                        k2 = c - 'a' + 10;
-                    }
-
-                    val.bytes[j++] = (int)(((k1 & 0xf) << 4) + (k2 & 0xf));
+                int x;
+                if ((sscanf(optarg, "%d", &x) != 1) ||
+                    (x < BCLM_VAL_MIN) || (x > BCLM_VAL_MAX))
+                {
+                    fprintf(stderr, "Error: Invalid value '%s' (must be %d-%d)\n",
+                                    optarg, BCLM_VAL_MIN, BCLM_VAL_MAX);
+                    retcode = 1;
+                    break;
                 }
-                val.dataSize = j;
+                val.dataSize = 1;
+                val.bytes[0] = (x & 0xff);
             }
             break;
         case 'h':
@@ -277,6 +260,10 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    if (retcode != 0) {
+        return retcode;
+    }
+
     if (op == OP_NONE) {
         usage(argv[0]);
         return 1;
@@ -284,7 +271,6 @@ int main(int argc, char *argv[]) {
 
     SMCOpen(&kIOConnection);
 
-    int retcode = 0;
     switch (op) {
         case OP_READ:
             result = SMCReadKey(key, &val);
