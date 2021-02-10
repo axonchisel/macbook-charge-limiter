@@ -159,11 +159,11 @@ kern_return_t SMCCall(  uint32_t selector,
     structureOutputSize = sizeof(SMCKeyData_t);
 
     return IOConnectCallStructMethod(kIOConnection,
-                                                                     selector,
-                                                                     inputStructure,
-                                                                     structureInputSize,
-                                                                     outputStructure,
-                                                                     &structureOutputSize);
+                                     selector,
+                                     inputStructure,
+                                     structureInputSize,
+                                     outputStructure,
+                                     &structureOutputSize);
 }
 
 kern_return_t SMCReadKey(const std::string &key, SMCVal_t *val) {
@@ -229,262 +229,12 @@ kern_return_t SMCWriteKey(SMCVal_t writeVal) {
     return kIOReturnSuccess;
 }
 
-UInt32 SMCReadIndexCount(void) {
-    SMCVal_t val;
-    int num = 0;
-
-    SMCReadKey("#KEY", &val);
-    num = ((int)val.bytes[2] << 8) + ((unsigned)val.bytes[3] & 0xff);
-    printf("Num: b0=%x b1=%x b2=%x b3=%x size=%d\n",
-             val.bytes[0],
-             val.bytes[1],
-             val.bytes[2],
-             val.bytes[3],
-             (unsigned int)val.dataSize);
-    return num;
-}
-
-void SMCGetKeys(std::vector<std::string> &keys) {
-    size_t totalKeys = SMCReadIndexCount();
-    for (size_t i = 0; i < totalKeys; i++) {
-        SMCKeyData_t inputStructure;
-        SMCKeyData_t outputStructure;
-
-        memset(&inputStructure, 0, sizeof(SMCKeyData_t));
-        memset(&outputStructure, 0, sizeof(SMCKeyData_t));
-
-        inputStructure.data8 = SMC_CMD_READ_INDEX;
-        inputStructure.data32 = i;
-
-        kern_return_t result =
-            SMCCall(KERNEL_INDEX_SMC, &inputStructure, &outputStructure);
-        if (result != kIOReturnSuccess) {
-            continue;
-        }
-
-        UInt32Char_t key;
-        _ultostr(key, outputStructure.key);
-        keys.push_back(key);
-    }
-}
-
-kern_return_t SMCPrintAll(const std::vector<std::string> &keys) {
-    for (const auto &key : keys) {
-        SMCVal_t val;
-        memset(&val, 0, sizeof(SMCVal_t));
-
-        SMCReadKey(key, &val);
-        printVal(val);
-    }
-
-    return kIOReturnSuccess;
-}
-
-bool SMCCast(const char spell[33]) {
-    SMCVal_t val;
-    snprintf(val.key, 5, "KPPW");
-    val.dataSize = strlen(spell);
-    snprintf(val.dataType, 5, "ch8*");
-    for (size_t i = 0; i < val.dataSize /* 32 */; i++) {
-        val.bytes[i] = spell[i];
-    }
-
-    kern_return_t result = SMCWriteKey(val);
-    fprintf(stderr,
-            "Wrote '%s' (size %d) to KPPW: %d\n",
-            spell,
-            val.dataSize,
-            result);
-
-    SMCVal_t result_val;
-    result = SMCReadKey("KPST", &result_val);
-    if (result != kIOReturnSuccess) {
-        fprintf(stderr, "Could not read KPST value: %d\n", result);
-    }
-
-    uint8_t response = result_val.bytes[0];
-    if (response != 1) {
-        fprintf(stderr, "Your spell: '%s' was incorrect: (%d)\n", spell, response);
-    } else {
-        fprintf(stderr, "Success KPST: %d\n", response);
-    }
-
-    return (response == 1);
-}
-
-kern_return_t SMCCompare(const std::vector<std::string> &keys) {
-    // Iterate each key using the fixed or choosen value.
-    UInt32Char_t key = {0};
-
-    char k = 33;
-    size_t max = 125 - 33;
-    for (size_t i = 0; i < max; i++) {
-        key[0] = k + i;
-        for (size_t ii = 0; ii < max; ii++) {
-            key[1] = k + ii;
-            for (size_t iii = 0; iii < max; iii++) {
-                key[2] = k + iii;
-                for (size_t iiii = 0; iiii < max; iiii++) {
-                    key[3] = k + iiii;
-                    SMCVal_t val;
-
-                    auto result = SMCReadKey(key, &val);
-                    if (result == kIOReturnSuccess && val.dataSize > 0) {
-                        if (std::find(keys.begin(), keys.end(), key) != keys.end()) {
-                            continue;
-                        }
-                        // This key was not in the discovered key list.
-                        printVal(val);
-                    }
-                }
-            }
-        }
-    }
-
-    return kIOReturnSuccess;
-}
-
-kern_return_t SMCPrintFans(void) {
-    kern_return_t result;
-    SMCVal_t val;
-    UInt32Char_t key;
-    int totalFans, i;
-
-    result = SMCReadKey("FNum", &val);
-    if (result != kIOReturnSuccess)
-        return kIOReturnError;
-
-    totalFans = _strtoul(val.bytes, val.dataSize, 10);
-    printf("Total fans in system: %d\n", totalFans);
-
-    for (i = 0; i < totalFans; i++) {
-        printf("\nFan #%d:\n", i);
-        snprintf(key, 5, "F%dAc", i);
-        SMCReadKey(key, &val);
-        printf("    Actual speed : %.0f Key[%s]\n",
-             _strtof(val.bytes, val.dataSize, 2),
-             key);
-        snprintf(key, 5, "F%dMn", i);
-        SMCReadKey(key, &val);
-        printf("    Minimum speed: %.0f\n", _strtof(val.bytes, val.dataSize, 2));
-        snprintf(key, 5, "F%dMx", i);
-        SMCReadKey(key, &val);
-        printf("    Maximum speed: %.0f\n", _strtof(val.bytes, val.dataSize, 2));
-        snprintf(key, 5, "F%dSf", i);
-        SMCReadKey(key, &val);
-        printf("    Safe speed   : %.0f\n", _strtof(val.bytes, val.dataSize, 2));
-        sprintf(key, "F%dTg", i);
-        SMCReadKey(key, &val);
-        printf("    Target speed : %.0f\n", _strtof(val.bytes, val.dataSize, 2));
-        SMCReadKey("FS! ", &val);
-        if ((_strtoul(val.bytes, 2, 16) & (1 << i)) == 0)
-            printf("    Mode         : auto\n");
-        else
-            printf("    Mode         : forced\n");
-    }
-
-    return kIOReturnSuccess;
-}
-
-void SMCDetectChange(char value, SMCVal_t write) {
-    SMCVal_t before, after;
-    SMCReadKey(write.key, &before);
-    if (before.dataSize == 1 && before.bytes[0] == write.bytes[0]) {
-        write.bytes[0] = before.bytes[0] + 1U;
-    }
-
-    kern_return_t status = SMCWriteKey(write);
-    write.bytes[0] = value;
-    if (status != kIOReturnSuccess) {
-        return;
-    }
-
-    bool value_changed = false;
-    SMCReadKey(write.key, &after);
-    if (before.dataSize != after.dataSize) {
-        value_changed = true;
-    } else {
-        for (size_t i = 0; i < before.dataSize; i++) {
-            if (before.bytes[0] != after.bytes[0]) {
-                value_changed = true;
-                break;
-            }
-        }
-    }
-
-    printf("%s writable %s using value %d\n",
-                 write.key,
-                 (value_changed) ? "and modifiable" : "only",
-                 write.bytes[0]);
-}
-
-kern_return_t SMCFuzz(SMCVal_t val, bool fixed_key, bool fixed_val) {
-    SMCVal_t write;
-
-    if (fixed_key && fixed_val) {
-        fprintf(stderr, "Cannot fuzz with a fixed value and key\n");
-        return kIOReturnError;
-    }
-
-    if (fixed_val) {
-        // If using a fixed value, the fuzzer will iterate through keys
-        // and supply a choosen value.
-        val.key[0] = 0;
-        fprintf(stderr, "Fuzzing using a fixed value: ");
-        printVal(val);
-    } else {
-        // If not using a fixed value or fixed value the choosen value
-        // for fuzzing all keys is 0x01.
-        // This could use improvement.
-        fprintf(stderr, "Fuzzing keys using: 0x01\n");
-        write.bytes[0] = 1;
-        write.dataSize = 1;
-    }
-
-    if (fixed_key) {
-        fprintf(stderr, "Fuzzing using a fixed key: %s\n", val.key);
-        memcpy(write.key, val.key, sizeof(val.key));
-        for (size_t i = 0; i < 0xFF; i++) {
-            write.bytes[0] = i;
-            SMCDetectChange(i, write);
-        }
-
-        return kIOReturnSuccess;
-    }
-
-    // Iterate each key using the fixed or choosen value.
-    char og = val.bytes[0];
-    char k = 33;
-    size_t max = 125 - 33;
-    for (size_t i = 0; i < max; i++) {
-        write.key[0] = k + i;
-        for (size_t ii = 0; ii < max; ii++) {
-            write.key[1] = k + ii;
-            for (size_t iii = 0; iii < max; iii++) {
-                write.key[2] = k + iii;
-                for (size_t iiii = 0; iiii < max; iiii++) {
-                    write.key[3] = k + iiii;
-                    SMCDetectChange(og, write);
-                }
-            }
-        }
-    }
-
-    return kIOReturnSuccess;
-}
-
 void usage(char *prog) {
     printf("MacBook Charge Limiter tool %s\n", VERSION);
     printf("Usage:\n");
     printf("%s [options]\n", prog);
-    printf("    -c <spell> : cast a spell\n");
-    printf("    -q         : attempt to discover 'hidden' keys\n");
-    printf("    -z         : fuzz all possible keys (or one key using -k)\n");
-    printf("    -f         : fan info decoded\n");
     printf("    -h         : help\n");
     printf("    -k <key>   : key to manipulate\n");
-    printf("    -l         : list all keys and values\n");
-    printf("    -r         : read the value of a key\n");
     printf("    -w <value> : write the specified value to a key\n");
     printf("    -v         : version\n");
     printf("\n");
@@ -498,24 +248,14 @@ int main(int argc, char *argv[]) {
     kern_return_t result;
     int op = OP_NONE;
     UInt32Char_t key = "\0";
-    char spell[33] = {0};
     SMCVal_t val;
 
     bool fixed_key = false, fixed_val = false;
-    while ((c = getopt(argc, argv, "fhk:lrw:c:vzq")) != -1) {
+    while ((c = getopt(argc, argv, "hk:rw:v")) != -1) {
         switch (c) {
-        case 'f':
-            op = OP_READ_FAN;
-            break;
-        case 'c':
-            snprintf(spell, 33, "%s", optarg);
-            op = OP_CAST;
         case 'k':
             fixed_key = true;
             snprintf(key, 5, "%s", optarg);
-            break;
-        case 'l':
-            op = OP_LIST;
             break;
         case 'r':
             op = OP_READ;
@@ -526,9 +266,7 @@ int main(int argc, char *argv[]) {
             break;
         case 'w':
             fixed_val = true;
-            if (op != OP_FUZZ) {
-                op = OP_WRITE;
-            }
+            op = OP_WRITE;
 
             {
                 size_t i;
@@ -563,13 +301,6 @@ int main(int argc, char *argv[]) {
         case '?':
             op = OP_NONE;
             break;
-        case 'z':
-            // Allow the fuzzing request to override write/read.
-            op = OP_FUZZ;
-            break;
-        case 'q':
-            op = OP_COMPARE;
-            break;
         }
     }
 
@@ -582,14 +313,6 @@ int main(int argc, char *argv[]) {
 
     int retcode = 0;
     switch (op) {
-    case OP_LIST:
-        SMCGetKeys(kSMCKeys);
-        result = SMCPrintAll(kSMCKeys);
-        if (result != kIOReturnSuccess) {
-            fprintf(stderr, "Error: SMCPrintAll() = %08x\n", result);
-            retcode = 1;
-        }
-        break;
     case OP_READ:
         if (strlen(key) > 0) {
             result = SMCReadKey(key, &val);
@@ -606,13 +329,6 @@ int main(int argc, char *argv[]) {
             retcode = 2;
         }
         break;
-    case OP_READ_FAN:
-        result = SMCPrintFans();
-        if (result != kIOReturnSuccess) {
-            fprintf(stderr, "Error: SMCPrintFans() = %08x\n", result);
-            retcode = 2;
-        }
-        break;
     case OP_WRITE:
         if (strlen(key) > 0) {
             snprintf(val.key, 5, "%s", key);
@@ -624,29 +340,6 @@ int main(int argc, char *argv[]) {
         } else {
             printf("Error: specify a key to write\n");
             retcode = 2;
-        }
-        break;
-    case OP_CAST:
-        if (!SMCCast(spell)) {
-            retcode = 1;
-        }
-        break;
-    case OP_FUZZ:
-        if (strlen(key) > 0) {
-            snprintf(val.key, 5, "%s", key);
-        }
-        result = SMCFuzz(val, fixed_key, fixed_val);
-        if (result != kIOReturnSuccess) {
-            fprintf(stderr, "Error: SMCFuzz() = %08x\n", result);
-            retcode = 1;
-        }
-        break;
-    case OP_COMPARE:
-        SMCGetKeys(kSMCKeys);
-        result = SMCCompare(kSMCKeys);
-        if (result != kIOReturnSuccess) {
-            fprintf(stderr, "Error: SMCCompare() = %08x\n", result);
-            retcode = 1;
         }
         break;
     }

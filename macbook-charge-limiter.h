@@ -33,22 +33,14 @@
 #define VERSION "0.01"
 
 #define OP_NONE 0
-#define OP_LIST 1
-#define OP_READ 2
-#define OP_READ_FAN 3
-#define OP_WRITE 4
-#define OP_FUZZ 5
-#define OP_COMPARE 6
-#define OP_CAST 7
+#define OP_READ 1
+#define OP_WRITE 2
 
 #define KERNEL_INDEX_SMC 2
 
 #define SMC_CMD_READ_BYTES 5
 #define SMC_CMD_WRITE_BYTES 6
-#define SMC_CMD_READ_INDEX 8
 #define SMC_CMD_READ_KEYINFO 9
-#define SMC_CMD_READ_PLIMIT 11
-#define SMC_CMD_READ_VERS 12
 
 #define DATATYPE_FPE2 "fpe2"
 #define DATATYPE_UINT8 "ui8 "
@@ -56,13 +48,6 @@
 #define DATATYPE_UINT32 "ui32"
 #define DATATYPE_SP78 "sp78"
 #define DATATYPE_FLT "flt "
-
-// key values
-/*#define SMC_KEY_CPU_TEMP      "TC0D"
-#define SMC_KEY_FAN0_RPM_MIN  "F0Tg"
-#define SMC_KEY_FAN1_RPM_MIN  "F1Tg"
-#define SMC_KEY_FAN0_RPM_CUR  "F0Ac"
-#define SMC_KEY_FAN1_RPM_CUR  "F1Ac"*/
 
 typedef struct {
     char major;
@@ -108,8 +93,3 @@ typedef struct {
     UInt32Char_t dataType;
     SMCBytes_t bytes;
 } SMCVal_t;
-
-// prototypes
-double SMCGetTemperature(char *key);
-kern_return_t SMCSetFanRpm(char *key, int32_t rpm);
-int SMCGetFanRpm(char *key);
