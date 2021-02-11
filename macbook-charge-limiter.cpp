@@ -42,44 +42,22 @@ io_connect_t kIOConnection;
 // Byte/String Conversion Utilities
 // ---------------------------------------------------------------------------
 
-UInt32 _strtoul(const char *str, int size, int base) {
+UInt32 _strtoul(const char *str, int size) {
     UInt32 total = 0;
     int i;
-
     for (i = 0; i < size; i++) {
-        if (base == 16)
-            total += str[i] << (size - 1 - i) * 8;
-        else
-            total += (unsigned char)(str[i] << (size - 1 - i) * 8);
+        total += str[i] << (size - 1 - i) * 8;
     }
     return total;
 }
 
 void _ultostr(char *str, UInt32 val) {
     str[0] = '\0';
-    snprintf(str,
-             5,
-             "%c%c%c%c",
+    snprintf(str, 5, "%c%c%c%c",
              (unsigned int)val >> 24,
              (unsigned int)val >> 16,
              (unsigned int)val >> 8,
              (unsigned int)val);
-}
-
-void printUInt(SMCVal_t val) {
-    printf("%u ", (unsigned int)_strtoul(val.bytes, val.dataSize, 10));
-}
-
-void printVal(SMCVal_t val) {
-    printf("  %s  [%-4s]  ", val.key, val.dataType);
-    if (val.dataSize > 0) {
-        if ((strcmp(val.dataType, DATATYPE_UINT8) == 0) ||
-            (strcmp(val.dataType, DATATYPE_UINT16) == 0) ||
-            (strcmp(val.dataType, DATATYPE_UINT32) == 0))
-            printUInt(val);
-    } else {
-        printf("no data\n");
-    }
 }
 
 
@@ -120,7 +98,9 @@ kern_return_t SMCOpen(io_connect_t *conn) {
     return kIOReturnSuccess;
 }
 
-kern_return_t SMCClose(io_connect_t conn) { return IOServiceClose(conn); }
+kern_return_t SMCClose(io_connect_t conn) {
+    return IOServiceClose(conn);
+}
 
 kern_return_t SMCCall(  uint32_t selector,
                         SMCKeyData_t *inputStructure,
@@ -148,7 +128,7 @@ kern_return_t SMCReadKey(const std::string &key, SMCVal_t *val) {
     memset(&outputStructure, 0, sizeof(SMCKeyData_t));
     memset(val, 0, sizeof(SMCVal_t));
 
-    inputStructure.key = _strtoul(key.c_str(), 4, 16);
+    inputStructure.key = _strtoul(key.c_str(), 4);
     snprintf(val->key, 5, "%s", key.c_str());
     inputStructure.data8 = SMC_CMD_READ_KEYINFO;
 
@@ -189,7 +169,7 @@ kern_return_t SMCWriteKey(SMCVal_t writeVal) {
     memset(&inputStructure, 0, sizeof(SMCKeyData_t));
     memset(&outputStructure, 0, sizeof(SMCKeyData_t));
 
-    inputStructure.key = _strtoul(writeVal.key, 4, 16);
+    inputStructure.key = _strtoul(writeVal.key, 4);
     inputStructure.data8 = SMC_CMD_WRITE_BYTES;
     inputStructure.keyInfo.dataSize = writeVal.dataSize;
     memcpy(inputStructure.bytes, writeVal.bytes, sizeof(writeVal.bytes));
@@ -208,18 +188,21 @@ kern_return_t SMCWriteKey(SMCVal_t writeVal) {
 // ---------------------------------------------------------------------------
 
 void usage(char *prog) {
-    printf("MacBook Charge Limiter tool %s\n", VERSION);
+    printf("MacBook Charge Limiter tool %s -- AxonChisel.net\n", VERSION);
     printf("Usage:\n");
-    printf("%s [options]\n", prog);
+    printf("%s [options] [new-limit]\n", prog);
     printf("    -h         : help\n");
-    printf("    -w <value> : write the specified value to a key\n");
-    printf("    -v         : version\n");
+    printf("    -v         : verbose mode\n");
+    printf("Invoke with no arguments to read current value,\n");
+    printf("or specify value %d-%d to set new charge limit.\n",
+            BCLM_VAL_MIN, BCLM_VAL_MAX);
     printf("\n");
 }
 
 int main(int argc, char *argv[]) {
     int c;
     int retcode = 0;
+    bool verbose = false;
     extern char *optarg;
     extern int optind, optopt, opterr;
 
@@ -227,41 +210,39 @@ int main(int argc, char *argv[]) {
     int op = OP_NONE;
     UInt32Char_t key = SMC_KEY_BATTERY_CHARGE_LEVEL_MAX;
     SMCVal_t val;
+    int new_limit;
 
-    while ((c = getopt(argc, argv, "hk:rw:v")) != -1) {
+    while ((c = getopt(argc, argv, "hv")) != -1) {
         switch (c) {
-        case 'r':
-            op = OP_READ;
-            break;
         case 'v':
-            printf("%s\n", VERSION);
-            return 0;
-            break;
-        case 'w':
-            op = OP_WRITE;
-            {
-                int x;
-                if ((sscanf(optarg, "%d", &x) != 1) ||
-                    (x < BCLM_VAL_MIN) || (x > BCLM_VAL_MAX))
-                {
-                    fprintf(stderr, "Error: Invalid value '%s' (must be %d-%d)\n",
-                                    optarg, BCLM_VAL_MIN, BCLM_VAL_MAX);
-                    retcode = 1;
-                    break;
-                }
-                val.dataSize = 1;
-                val.bytes[0] = (x & 0xff);
-            }
+            verbose = true;
             break;
         case 'h':
         case '?':
-            op = OP_NONE;
-            break;
+            usage(argv[0]);
+            return 0;
         }
     }
 
     if (retcode != 0) {
         return retcode;
+    }
+
+    if (optind == (argc)) { // (if no more args past getopt)
+        op = OP_READ;
+    }
+
+    if (optind == (argc-1)) { // (if exactly one more arg past getopt)
+        op = OP_WRITE;
+        if ((sscanf(argv[optind], "%d", &new_limit) != 1) ||
+            (new_limit < BCLM_VAL_MIN) || (new_limit > BCLM_VAL_MAX))
+        {
+            fprintf(stderr, "Error: Invalid value '%s' (must be %d-%d)\n",
+                            argv[optind], BCLM_VAL_MIN, BCLM_VAL_MAX);
+            return 1;
+        }
+        val.dataSize = 1;
+        val.bytes[0] = (new_limit & 0xff);
     }
 
     if (op == OP_NONE) {
@@ -279,15 +260,24 @@ int main(int argc, char *argv[]) {
                 retcode = 1;
             }
             else {
-                printVal(val);
+                if (verbose) {
+                    printf("Current battery charge limit (%d-%d): %d%%\n",
+                        BCLM_VAL_MIN, BCLM_VAL_MAX, val.bytes[0]);
+                } else {
+                    printf("%d\n", val.bytes[0]);
+                }
             }
             break;
         case OP_WRITE:
             snprintf(val.key, 5, "%s", key);
             result = SMCWriteKey(val);
             if (result != kIOReturnSuccess) {
-                fprintf(stderr, "Error: SMCWriteKey() = %08x\n", result);
+                fprintf(stderr, "Error: SMCWriteKey() = %08x (Did you run with sudo?)\n", result);
                 retcode = 1;
+            }
+            if (verbose) {
+                printf("Set battery charge limit (%d-%d) to: %d%%\n",
+                    BCLM_VAL_MIN, BCLM_VAL_MAX, val.bytes[0]);
             }
             break;
     }
