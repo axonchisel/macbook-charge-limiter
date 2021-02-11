@@ -188,7 +188,7 @@ kern_return_t SMCWriteKey(SMCVal_t writeVal) {
 // ---------------------------------------------------------------------------
 
 void usage(char *prog) {
-    printf("MacBook Charge Limiter tool %s -- AxonChisel.net\n", VERSION);
+    printf("MacBook Charge Limiter Tool %s -- AxonChisel.net\n", VERSION);
     printf("Usage:\n");
     printf("%s [options] [new-limit]\n", prog);
     printf("    -h         : help\n");
