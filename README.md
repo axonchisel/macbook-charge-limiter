@@ -82,6 +82,17 @@ Current battery charge limit (1-100): 80%
  ```
 
 
+### Compatibility
+
+This tool should work with all MacBooks from ~ 2011 - 2020.
+
+New Apple Silicon (M1) MacBooks have not been tested and may not be 
+compatible due to potential SMC key changes.  
+
+If you are interested in contributing to adapt this software to newer
+computers, please keep the project philosophy in mind.
+
+
 ### Resources
 
 #### Hardware / SMC
