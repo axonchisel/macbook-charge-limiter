@@ -49,22 +49,35 @@ The value is permanently stored in SMC, and the tool need only be run
 once (or whenever the SMC value is reset or needs to be updated).
 
 
-### Building
+### Download Executable
 
-Just run `make` in the directory. An executable `macbook-charge-limiter` will be created.
+You can download a compiled executable from:
+https://github.com/axonchisel/macbook-charge-limiter/releases
+
+
+### Building from Source
+
+Or you can build it yourself from source.
+
+Just run `make` in the directory. 
+An executable `macbook-charge-limiter` will be created.
 
 
 ### Help / Usage
 
 ```
 $ ./macbook-charge-limiter -h
-MacBook Charge Limiter Tool 1.0.2 -- AxonChisel.net
+MacBook Charge Limiter Tool 1.0.3 -- Copyright (C) 2021 AxonChisel.net
+
 Usage:
 ./macbook-charge-limiter [options] [new-limit]
     -h         : help
     -v         : verbose mode
 Invoke with no arguments to read current value,
 or specify value 1-100 to set new charge limit.
+
+This software comes with ABSOLUTELY NO WARRANTY. Use at your own risk.
+More info: https://github.com/axonchisel/macbook-charge-limiter
 ```
 
 ```

@@ -29,7 +29,7 @@
 //#include "OSTypes.h"
 #include <IOKit/IOKitLib.h>
 
-#define VERSION "1.0.2"
+#define VERSION "1.0.3"
 
 #define OP_NONE 0
 #define OP_READ 1
