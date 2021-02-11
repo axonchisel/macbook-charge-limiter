@@ -4,20 +4,19 @@
  * Copyright (C) 2015 theopolis
  * Copyright (C) 2006 devnull
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
-
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
-
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
- * USA.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
 #include <string>
@@ -188,7 +187,8 @@ kern_return_t SMCWriteKey(SMCVal_t writeVal) {
 // ---------------------------------------------------------------------------
 
 void usage(char *prog) {
-    printf("MacBook Charge Limiter Tool %s -- AxonChisel.net\n", VERSION);
+    printf("MacBook Charge Limiter Tool %s -- Copyright (C) 2021 AxonChisel.net\n", VERSION);
+    printf("\n");
     printf("Usage:\n");
     printf("%s [options] [new-limit]\n", prog);
     printf("    -h         : help\n");
@@ -196,6 +196,9 @@ void usage(char *prog) {
     printf("Invoke with no arguments to read current value,\n");
     printf("or specify value %d-%d to set new charge limit.\n",
             BCLM_VAL_MIN, BCLM_VAL_MAX);
+    printf("\n");
+    printf("This software comes with ABSOLUTELY NO WARRANTY. Use at your own risk.\n");
+    printf("More info: https://github.com/axonchisel/macbook-charge-limiter\n");
     printf("\n");
 }
 

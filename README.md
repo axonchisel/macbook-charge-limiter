@@ -1,6 +1,6 @@
 ## MacBook Charge Limiter Tool
 
-AxonChisel.net MacBook Charge Limiter Tool.
+MacBook Charge Limiter Command-Line Tool.
 
 This `macbook-charge-limiter` tool allows MacBook users to set a maximum
 battery charge level, especially useful for those who leave their laptops
@@ -58,7 +58,7 @@ Just run `make` in the directory. An executable `macbook-charge-limiter` will be
 
 ```
 $ ./macbook-charge-limiter -h
-MacBook Charge Limiter Tool 1.0.1 -- AxonChisel.net
+MacBook Charge Limiter Tool 1.0.2 -- AxonChisel.net
 Usage:
 ./macbook-charge-limiter [options] [new-limit]
     -h         : help
@@ -91,6 +91,29 @@ compatible due to potential SMC key changes.
 
 If you are interested in contributing to adapt this software to newer
 computers, please keep the project philosophy in mind.
+
+
+### Warranty (There isn't one. Use this at your own risk.)
+
+BECAUSE THE PROGRAM IS LICENSED FREE OF CHARGE, THERE IS NO WARRANTY
+FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW.  EXCEPT WHEN
+OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES
+PROVIDE THE PROGRAM "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED
+OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.  THE ENTIRE RISK AS
+TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU.  SHOULD THE
+PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING,
+REPAIR OR CORRECTION.
+
+IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING
+WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MAY MODIFY AND/OR
+REDISTRIBUTE THE PROGRAM AS PERMITTED ABOVE, BE LIABLE TO YOU FOR DAMAGES,
+INCLUDING ANY GENERAL, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING
+OUT OF THE USE OR INABILITY TO USE THE PROGRAM (INCLUDING BUT NOT LIMITED
+TO LOSS OF DATA OR DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY
+YOU OR THIRD PARTIES OR A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER
+PROGRAMS), EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGES.
 
 
 ### Resources
