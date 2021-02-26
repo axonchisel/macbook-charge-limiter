@@ -67,7 +67,7 @@ An executable `macbook-charge-limiter` will be created.
 
 ```
 $ ./macbook-charge-limiter -h
-MacBook Charge Limiter Tool 1.0.3 -- Copyright (C) 2021 AxonChisel.net
+MacBook Charge Limiter Tool 1.0.4 -- Copyright (C) 2021 AxonChisel.net
 
 Usage:
 ./macbook-charge-limiter [options] [new-limit]

@@ -33,8 +33,11 @@
 // Globals
 // ---------------------------------------------------------------------------
 
-// We only need 1 open connection, might as well be global.
-io_connect_t kIOConnection;
+// Global app options:
+MCL_AppOptions_t gAppOptions;
+
+// Global IOKit Connection for SMC access:
+io_connect_t gIOConnection;
 
 
 // ---------------------------------------------------------------------------
@@ -61,7 +64,7 @@ void _ultostr(char *str, UInt32 val) {
 
 
 // ---------------------------------------------------------------------------
-// SMC Interface
+// SMC Low Level Interface
 // ---------------------------------------------------------------------------
 
 kern_return_t SMCOpen(io_connect_t *conn) {
@@ -110,13 +113,18 @@ kern_return_t SMCCall(  uint32_t selector,
     structureInputSize = sizeof(SMCKeyData_t);
     structureOutputSize = sizeof(SMCKeyData_t);
 
-    return IOConnectCallStructMethod(kIOConnection,
+    return IOConnectCallStructMethod(gIOConnection,
                                      selector,
                                      inputStructure,
                                      structureInputSize,
                                      outputStructure,
                                      &structureOutputSize);
 }
+
+
+// ---------------------------------------------------------------------------
+// SMC Key Read/Write Interface (using SMS Low Level Interface)
+// ---------------------------------------------------------------------------
 
 kern_return_t SMCReadKey(const std::string &key, SMCVal_t *val) {
     kern_return_t result;
@@ -183,10 +191,10 @@ kern_return_t SMCWriteKey(SMCVal_t writeVal) {
 
 
 // ---------------------------------------------------------------------------
-// Tool Logic
+// App Usage and Command-Line Interace
 // ---------------------------------------------------------------------------
 
-void usage(char *prog) {
+void app_usage(char *prog) {
     printf("MacBook Charge Limiter Tool %s -- Copyright (C) 2021 AxonChisel.net\n", VERSION);
     printf("\n");
     printf("Usage:\n");
@@ -202,28 +210,21 @@ void usage(char *prog) {
     printf("\n");
 }
 
-int main(int argc, char *argv[]) {
+int app_parse_cmdline(int argc, char *argv[]) {
     int c;
     int retcode = 0;
-    bool verbose = false;
     extern char *optarg;
     extern int optind, optopt, opterr;
 
-    kern_return_t result;
-    int op = OP_NONE;
-    UInt32Char_t key = SMC_KEY_BATTERY_CHARGE_LEVEL_MAX;
-    SMCVal_t val;
-    int new_limit;
-
     while ((c = getopt(argc, argv, "hv")) != -1) {
         switch (c) {
-        case 'v':
-            verbose = true;
-            break;
-        case 'h':
-        case '?':
-            usage(argv[0]);
-            return 0;
+            case 'v':
+                gAppOptions.verbose = true;
+                break;
+            case 'h':
+            case '?':
+                app_usage(argv[0]);
+                return 0;
         }
     }
 
@@ -232,59 +233,110 @@ int main(int argc, char *argv[]) {
     }
 
     if (optind == (argc)) { // (if no more args past getopt)
-        op = OP_READ;
+        gAppOptions.op = OP_READ;
     }
 
     if (optind == (argc-1)) { // (if exactly one more arg past getopt)
-        op = OP_WRITE;
-        if ((sscanf(argv[optind], "%d", &new_limit) != 1) ||
-            (new_limit < BCLM_VAL_MIN) || (new_limit > BCLM_VAL_MAX))
+        gAppOptions.op = OP_WRITE;
+        if ((sscanf(argv[optind], "%d", &gAppOptions.new_limit) != 1) ||
+            (gAppOptions.new_limit < BCLM_VAL_MIN) || (gAppOptions.new_limit > BCLM_VAL_MAX))
         {
             fprintf(stderr, "Error: Invalid value '%s' (must be %d-%d)\n",
                             argv[optind], BCLM_VAL_MIN, BCLM_VAL_MAX);
             return 1;
         }
-        val.dataSize = 1;
-        val.bytes[0] = (new_limit & 0xff);
     }
 
-    if (op == OP_NONE) {
-        usage(argv[0]);
+    if (gAppOptions.op == OP_NONE) {
+        app_usage(argv[0]);
         return 1;
     }
 
-    SMCOpen(&kIOConnection);
+    return 0;
+}
 
-    switch (op) {
+
+// ---------------------------------------------------------------------------
+// App Logic
+// ---------------------------------------------------------------------------
+
+int app_do_read() {
+    UInt32Char_t key = SMC_KEY_BATTERY_CHARGE_LEVEL_MAX;
+    kern_return_t result;
+    SMCVal_t val;
+
+    // Read key:
+    result = SMCReadKey(key, &val);
+    if (result != kIOReturnSuccess) {
+        fprintf(stderr, "Error: SMCReadKey() = %08x\n", result);
+        return 1;
+    }
+
+    // Display result (verbose flowery or just the facts):
+    if (gAppOptions.verbose) {
+        printf("Current battery charge limit (%d-%d): %d%%\n",
+            BCLM_VAL_MIN, BCLM_VAL_MAX, val.bytes[0]);
+    } else {
+        printf("%d\n", val.bytes[0]);
+    }
+
+    return 0;
+}
+
+int app_do_write() {
+    UInt32Char_t key = SMC_KEY_BATTERY_CHARGE_LEVEL_MAX;
+    kern_return_t result;
+    SMCVal_t val;
+
+    // Write key:
+    val.dataSize = 1;
+    val.bytes[0] = (gAppOptions.new_limit & 0xff);
+    snprintf(val.key, 5, "%s", key);
+    result = SMCWriteKey(val);
+    if (result != kIOReturnSuccess) {
+        fprintf(stderr, "Error: SMCWriteKey() = %08x (Did you run with sudo?)\n", result);
+        return 1;
+    }
+
+    // Display result (only in verbose mode, else silent):
+    if (gAppOptions.verbose) {
+        printf("Set battery charge limit (%d-%d) to: %d%%\n",
+            BCLM_VAL_MIN, BCLM_VAL_MAX, val.bytes[0]);
+    }
+
+    return 0;
+}
+
+int app_run_command() {
+    int retcode;
+
+    switch (gAppOptions.op) {
         case OP_READ:
-            result = SMCReadKey(key, &val);
-            if (result != kIOReturnSuccess) {
-                fprintf(stderr, "Error: SMCReadKey() = %08x\n", result);
-                retcode = 1;
-            }
-            else {
-                if (verbose) {
-                    printf("Current battery charge limit (%d-%d): %d%%\n",
-                        BCLM_VAL_MIN, BCLM_VAL_MAX, val.bytes[0]);
-                } else {
-                    printf("%d\n", val.bytes[0]);
-                }
-            }
+            retcode = app_do_read();
             break;
         case OP_WRITE:
-            snprintf(val.key, 5, "%s", key);
-            result = SMCWriteKey(val);
-            if (result != kIOReturnSuccess) {
-                fprintf(stderr, "Error: SMCWriteKey() = %08x (Did you run with sudo?)\n", result);
-                retcode = 1;
-            }
-            if (verbose) {
-                printf("Set battery charge limit (%d-%d) to: %d%%\n",
-                    BCLM_VAL_MIN, BCLM_VAL_MAX, val.bytes[0]);
-            }
+            retcode = app_do_write();
             break;
     }
 
-    SMCClose(kIOConnection);
     return retcode;
 }
+
+int main(int argc, char *argv[]) {
+    int retcode;
+
+    retcode = app_parse_cmdline(argc, argv);
+    if (retcode != 0) {
+        return retcode;
+    }
+
+    SMCOpen(&gIOConnection);
+    {
+        retcode = app_run_command();
+    }
+    SMCClose(gIOConnection);
+
+    return retcode;
+}
+
+// ---------------------------------------------------------------------------

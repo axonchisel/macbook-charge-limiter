@@ -29,11 +29,36 @@
 //#include "OSTypes.h"
 #include <IOKit/IOKitLib.h>
 
-#define VERSION "1.0.3"
+
+// ---------------------------------------------------------------------------
+// App Constants
+// ---------------------------------------------------------------------------
+
+#define VERSION "1.0.4"
 
 #define OP_NONE 0
 #define OP_READ 1
 #define OP_WRITE 2
+
+#define BCLM_VAL_MIN 1
+#define BCLM_VAL_MAX 100
+#define BCLM_VAL_DEFAULT 100
+
+
+// ---------------------------------------------------------------------------
+// App Data Model
+// ---------------------------------------------------------------------------
+
+typedef struct {
+    bool verbose = false;
+    int new_limit;
+    int op = OP_NONE;
+} MCL_AppOptions_t;
+
+
+// ---------------------------------------------------------------------------
+// SMC Constants
+// ---------------------------------------------------------------------------
 
 #define KERNEL_INDEX_SMC 2
 
@@ -41,18 +66,12 @@
 #define SMC_CMD_WRITE_BYTES 6
 #define SMC_CMD_READ_KEYINFO 9
 
-#define DATATYPE_FPE2 "fpe2"
-#define DATATYPE_UINT8 "ui8 "
-#define DATATYPE_UINT16 "ui16"
-#define DATATYPE_UINT32 "ui32"
-#define DATATYPE_SP78 "sp78"
-#define DATATYPE_FLT "flt "
-
 #define SMC_KEY_BATTERY_CHARGE_LEVEL_MAX "BCLM"
 
-#define BCLM_VAL_MIN 1
-#define BCLM_VAL_MAX 100
-#define BCLM_VAL_DEFAULT 100
+
+// ---------------------------------------------------------------------------
+// SMC Data Model
+// ---------------------------------------------------------------------------
 
 typedef struct {
     char major;
@@ -98,3 +117,5 @@ typedef struct {
     UInt32Char_t dataType;
     SMCBytes_t bytes;
 } SMCVal_t;
+
+// ---------------------------------------------------------------------------
